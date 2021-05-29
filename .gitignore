@@ -1,0 +1,28 @@
+
+################################################################################
+
+# Go.gitignore by github
+
+# Binaries for programs and plugins
+*.exe
+*exe~
+*.dll
+*.so
+*.dylib
+
+# Test binary, built with `go test -c`
+*.test
+
+# Output of the go coverage tool, specifically when used with LiteIDE
+*.out
+
+# Dependency directories (remove the comment below to include it)
+# vendor/
+.
+
+################################################################################
+
+# Added Extras
+
+# Don't add .env files as they may contain sensitive values
+.env
