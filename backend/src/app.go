@@ -22,6 +22,7 @@ type App struct {
 	// Configuration Settings
 	minimum_password int
 	maximum_password int
+	listen_addr      string
 }
 
 func (app *App) Initialize() {
@@ -34,18 +35,42 @@ func (app *App) Initialize() {
 	redis_pass := os.Getenv("REDIS_PASS")
 	redis_database, err := strconv.Atoi(os.Getenv("REDIS_DB"))
 
+	min_password, err := strconv.Atoi(os.Getenv("MINIMUM_PASSWORD_LENGTH"))
+	if err != nil {
+		log.Panicf("Unable to parse MINIMUM_PASSWORD_LENGTH: %s", err)
+	}
+
+	max_password, err := strconv.Atoi(os.Getenv("MAXIMUM_PASSWORD_LENGTH"))
+	if err != nil {
+		log.Panicf("Unable to parse MAXIMUM_PASSWORD_LENGTH: %s", err)
+	}
+
+	app.minimum_password = min_password
+	app.maximum_password = max_password
+
+	app.listen_addr = os.Getenv("LISTEN_ADDRESS")
+
 	log.Printf(`Connecting to database "%s" as user "%s" at host "%s"`, database_name, database_user, database_host)
 
 	// Connect to the database and check for any errors
-	db, err := sqlx.Open("postgres",
-		fmt.Sprintf("user=%s password=%s dbname=%s host=%s sslmode=disable",
-			database_user, database_pass, database_name, database_host))
+	for {
+		db, err := sqlx.Open("postgres",
+			fmt.Sprintf("user=%s password=%s dbname=%s host=%s sslmode=disable",
+				database_user, database_pass, database_name, database_host))
+
+		if err == nil {
+			app.DB = db
+			break
+		}
+		//else
+
+		// wait for a bit before trying again
+		time.Sleep(500 * time.Millisecond)
+	}
 
 	if err != nil {
 		log.Panic(err)
 	}
-
-	app.DB = db
 
 	// Connect to redis and check for any errors
 	rdb := redis.NewClient(&redis.Options{
@@ -79,9 +104,9 @@ func (app *App) Initialize() {
 
 }
 
-func (a *App) Run(addr string) {
-	log.Printf("Backend serving on %s\n", addr)
-	log.Fatal(http.ListenAndServe(addr, a.Router))
+func (app *App) Run() {
+	log.Printf("Backend serving on %s\n", app.listen_addr)
+	log.Fatal(http.ListenAndServe(app.listen_addr, app.Router))
 }
 
 func main() {
@@ -90,15 +115,9 @@ func main() {
 
 	log.Println("Backend Starting")
 
-	// sleep to make sure that the database is up
-	time.Sleep(1 * time.Second)
-
-	app := App{
-		minimum_password: 8,
-		maximum_password: 256,
-	}
+	app := App{}
 
 	app.Initialize()
 
-	app.Run("0.0.0.0:8080")
+	app.Run()
 }
