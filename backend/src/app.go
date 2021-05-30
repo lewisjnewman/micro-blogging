@@ -59,11 +59,17 @@ func (app *App) Initialize() {
 	// Create Router Object
 	app.Router = &mux.Router{}
 
+	app.Router.NotFoundHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		NotFoundHelper(w)
+	})
+
 	// Setup Routes
 	app.Router.HandleFunc("/", app.HandleRoot).Methods("GET")
 
 	app.Router.HandleFunc("/register", app.HandleRegister).Methods("POST")
-	app.Router.HandleFunc("/authenticate", app.HandleAuthenticate).Methods("POST")
+	app.Router.HandleFunc("/auth/login", app.HandleAuthenticate).Methods("POST")
+	app.Router.HandleFunc("/auth/refresh", app.HandleRefresh).Methods("POST")
+	app.Router.HandleFunc("/auth/expire", app.HandleExpire).Methods("POST")
 
 	app.Router.HandleFunc("/account/{id:[0-9]+}/info", app.HandleAccountInfo).Methods("GET")
 	app.Router.HandleFunc("/account/{id:[0-9]+}/posts", app.HandleGetAccountPosts).Methods("GET")
