@@ -23,6 +23,7 @@ type App struct {
 	minimum_password int
 	maximum_password int
 	listen_addr      string
+	cors_origin      string
 }
 
 func (app *App) Initialize() {
@@ -49,6 +50,8 @@ func (app *App) Initialize() {
 	app.maximum_password = max_password
 
 	app.listen_addr = os.Getenv("LISTEN_ADDRESS")
+
+	app.cors_origin = os.Getenv("CORS_ORIGIN")
 
 	log.Printf(`Connecting to database "%s" as user "%s" at host "%s"`, database_name, database_user, database_host)
 
@@ -88,18 +91,21 @@ func (app *App) Initialize() {
 		NotFoundHelper(w)
 	})
 
+	app.Router.Use(app.CORSMiddleware)
+
 	// Setup Routes
 	app.Router.HandleFunc("/", app.HandleRoot).Methods("GET")
 
-	app.Router.HandleFunc("/register", app.HandleRegister).Methods("POST")
-	app.Router.HandleFunc("/auth/login", app.HandleAuthenticate).Methods("POST")
-	app.Router.HandleFunc("/auth/refresh", app.HandleRefresh).Methods("POST")
-	app.Router.HandleFunc("/auth/expire", app.HandleExpire).Methods("POST")
+	app.Router.HandleFunc("/register", app.HandleRegister).Methods("POST", "OPTIONS")
+	app.Router.HandleFunc("/auth/login", app.HandleAuthenticate).Methods("POST", "OPTIONS")
+	app.Router.HandleFunc("/auth/refresh", app.HandleRefresh).Methods("POST", "OPTIONS")
+	app.Router.HandleFunc("/auth/expire", app.HandleExpire).Methods("POST", "OPTIONS")
+	app.Router.HandleFunc("/auth/logged_in", app.HandleLoggedIn).Methods("GET")
 
 	app.Router.HandleFunc("/account/{id:[0-9]+}/info", app.HandleAccountInfo).Methods("GET")
 	app.Router.HandleFunc("/account/{id:[0-9]+}/posts", app.HandleGetAccountPosts).Methods("GET")
 
-	app.Router.HandleFunc("/post", app.HandleMakePost).Methods("POST")
+	app.Router.HandleFunc("/post", app.HandleMakePost).Methods("POST", "OPTIONS")
 	app.Router.HandleFunc("/post/{id:[0-9]+}", app.HandleGetPost).Methods("GET")
 
 }

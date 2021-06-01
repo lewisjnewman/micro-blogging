@@ -333,6 +333,40 @@ func (app *App) HandleExpire(w http.ResponseWriter, r *http.Request) {
 	CreatedHelper(w)
 }
 
+// Tell the user whether they are logged in or not since the js in the browser
+// Won't be able to tell
+func (app *App) HandleLoggedIn(w http.ResponseWriter, r *http.Request) {
+
+	response := struct {
+		Auth_valid    bool `json:"auth"`
+		Refresh_valid bool `json:"refresh"`
+	}{
+		Auth_valid:    false,
+		Refresh_valid: false,
+	}
+
+	refresh, err1 := r.Cookie("refresh")
+	auth, err2 := r.Cookie("auth")
+	if err1 != nil && err2 != nil {
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(response)
+		return
+	}
+
+	_, err1 = app.VerifyToken(refresh.Value)
+	_, err2 = app.VerifyToken(auth.Value)
+
+	if err1 == nil {
+		response.Refresh_valid = true
+	}
+	if err2 == nil {
+		response.Auth_valid = true
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(response)
+}
+
 // Get Information About an Account
 func (app *App) HandleAccountInfo(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)

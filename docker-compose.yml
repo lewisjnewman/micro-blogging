@@ -9,6 +9,7 @@ services:
       - 8080:8080
     depends_on:
       - database
+      - redis
 
   database:
     image: postgres:13-alpine
@@ -24,6 +25,14 @@ services:
   redis:
     image: redis:alpine
     hostname: redis
+
+  frontend:
+    build: ./frontend
+    volumes:
+      - ./frontend:/app
+    ports:
+      - 5000:5000
+    hostname: frontend
 
 volumes:
     database-data:
